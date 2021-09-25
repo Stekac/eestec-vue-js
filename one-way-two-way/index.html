@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One way two way vezba</title>
+</head>
+
+<body>
+
+  <div>
+    <input type="text" name="input" id="input">
+    <h1 id="h1">Hello</h1>
+  </div>
+
+  <div>
+    <input type="text" name="input" id="input-two-way">
+    <h1 id="h1-two-way">Two-way</h1>
+  </div>
+
+  <script>
+    const input = document.getElementById("input");
+    const h1 = document.getElementById("h1");
+
+    // flow od HTML vo JS ---------------------------------
+    const flowToJs = (e) => {
+      console.log('Podatocite pristignaa vo JS i se inicirani od event vo HTML', e.target.value)
+    }
+    input.addEventListener('input', flowToJs)
+    // ----------------------------------------------------
+
+
+    // flow od JS vo HTML (smeni ja proxyHeaderText vo devtools)
+    const headerText = {
+      value: 'Hello'
+    }
+
+    const proxyHeaderText = new Proxy(headerText, {
+      set(obj, prop, value) {
+        obj[prop] = value;
+        h1.innerText = value;
+        return true;
+      }
+    })
+
+    window.oneWay = proxyHeaderText;
+    // -----------------------------------------------------
+
+
+
+    // two way ---------------------------------------------
+    const inputTwoWay = document.getElementById("input-two-way");
+    const h1TwoWay = document.getElementById("h1-two-way");
+
+    const headerText2 = {
+      value: 'Hello'
+    }
+
+    const twoWay = new Proxy(headerText2, {
+      set(obj, prop, value) {
+        obj[prop] = value;
+        h1TwoWay.innerText = value;
+        inputTwoWay.value = value;
+        return true;
+      }
+    })
+
+    const flowToJSAndUpdate = (e) => twoWay.value = e.target.value
+
+    inputTwoWay.addEventListener('input', flowToJSAndUpdate)
+
+    window.twoWay = twoWay;
+    // -----------------------------------------------------
+  </script>
+</body>
+
+</html>
