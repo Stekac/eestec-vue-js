@@ -1,39 +1,62 @@
 <script setup>
-import { reactive, computed, ref } from 'vue'
+import { reactive, computed, onUpdated } from 'vue'
 // list all breeds - https://dog.ceo/api/breeds/list/all
 // random from a breed - https://dog.ceo/api/breed/hound/images/random
 // random from a sub-breed - https://dog.ceo/api/breed/hound/afghan/images/random
 
-let breeds = reactive({ list: [] });
-
 const getBreeds = async () => {
   const json = await fetch('https://dog.ceo/api/breeds/list/all').then(resp => resp.json());
-  console.log(Object.keys(json.message))
-  breeds.list = Object.keys(json.message);
+  state.breeds = json.message;
 }
 
 getBreeds();
 
-
-
-const owner = reactive({
-  name: '',
-  surname: ''
+const state = reactive({
+  breeds: {},
+  owner: {
+    name: '',
+    surname: ''
+  },
+  dogs: []
 })
 
-const dog = reactive({
-  name: '',
-  breed: '',
-  subBreed: '',
-  gender: ''
-});
+const listOfBreeds = computed(() => Object.keys(state.breeds));
 
-const dogs = reactive({
-  list: [dog]
-})
+const hasSubBreed = (breed) => state.breeds[breed]?.length > 0;
 
-const dogNameExists = computed(() => {
-  return dog.name !== ''
+const getSubBreed = (breed) => state.breeds[breed];
+
+const dogNameExists = (dogName) => {
+  return dogName !== ''
+};
+
+const addNewDog = () => {
+  const dog = reactive({
+    name: '',
+    breed: '',
+    subBreed: '',
+    gender: '',
+    image: null
+  });
+
+  state.dogs.push(dog);
+}
+
+const getBreedImage = async (dog) => {
+  if (!hasSubBreed(dog.breed)) {
+    const json = await fetch(`https://dog.ceo/api/breed/${dog.breed}/images/random`).then(resp => resp.json());
+    dog.image = json.message;
+  }
+}
+
+const getSubBreedImage = async (dog) => {
+  const json = await fetch(`https://dog.ceo/api/breed/${dog.breed}/${dog.subBreed}/images/random`).then(resp => resp.json());
+  dog.image = json.message;
+}
+
+
+onUpdated(() => {
+  console.log(state.dogs)
 })
 
 </script>
@@ -50,15 +73,15 @@ const dogNameExists = computed(() => {
       <div class="row">
         <div class="col-6 m-auto">
           <div class="row">
-            <h3>Owner {{ owner.name }} {{ owner.surname }}</h3>
+            <h3>Owner {{ state.owner.name }} {{ state.owner.surname }}</h3>
             <div class="row mb-3">
               <div class="col-6">
                 <label for="name" class="form-label">Name</label>
-                <input v-model="owner.name" type="text" class="form-control" id="name" />
+                <input v-model="state.owner.name" type="text" class="form-control" id="name" />
               </div>
               <div class="col-6">
                 <label for="surname" class="form-label">Surname</label>
-                <input v-model="owner.surname" type="text" class="form-control" id="surname" />
+                <input v-model="state.owner.surname" type="text" class="form-control" id="surname" />
               </div>
             </div>
           </div>
@@ -68,9 +91,18 @@ const dogNameExists = computed(() => {
               <h3 class="mb-3">Dogs</h3>
 
               <div class="dogs">
-                <div v-for="dog in dogs.list" class="card mb-3">
-                  <img class="dog-image border-female" src="https://via.placeholder.com/150" alt />
-                  <h5 class="card-header bg-female">{{ dogNameExists ? dog.name : 'Dog Name' }}</h5>
+                <div v-for="dog in state.dogs" class="card mb-3">
+                  <img
+                    v-if="dog.image"
+                    class="dog-image"
+                    :class="{ 'border-male': dog.gender === 'male', 'border-female': dog.gender === 'female' }"
+                    :src="dog.image"
+                    alt
+                  />
+                  <h5
+                    class="card-header"
+                    :class="{ 'bg-male': dog.gender === 'male', 'bg-female': dog.gender === 'female' }"
+                  >{{ dogNameExists(dog.name) ? dog.name : 'Dog Name' }}</h5>
                   <div class="card-body">
                     <div class="row">
                       <div class="col-12 mb-3">
@@ -81,19 +113,29 @@ const dogNameExists = computed(() => {
                         <div class="row">
                           <div class="col-6">
                             <label for="name" class="form-label">Breed</label>
-                            <select v-model="dog.breed" class="form-select" name="breed" id="breed">
-                              <option v-for="breed in breeds.list" :value="breed">{{ breed }}</option>
-                            </select>
-                          </div>
-                          <div class="col-6">
-                            <label for="name" class="form-label">Sub-Breed</label>
                             <select
-                              v-model="dog.subBreed"
+                              v-model="dog.breed"
+                              @change="getBreedImage(dog)"
                               class="form-select"
                               name="breed"
                               id="breed"
                             >
-                              <option value>Sub-Breed</option>
+                              <option v-for="breed in listOfBreeds" :value="breed">{{ breed }}</option>
+                            </select>
+                          </div>
+                          <div v-if="hasSubBreed(dog.breed)" class="col-6">
+                            <label for="name" class="form-label">Sub-Breed</label>
+                            <select
+                              v-model="dog.subBreed"
+                              @change="getSubBreedImage(dog)"
+                              class="form-select"
+                              name="breed"
+                              id="breed"
+                            >
+                              <option
+                                v-for="subBreed in getSubBreed(dog.breed)"
+                                :value="subBreed"
+                              >{{ subBreed }}</option>
                             </select>
                           </div>
                         </div>
@@ -105,9 +147,9 @@ const dogNameExists = computed(() => {
                             <input
                               class="form-check-input"
                               type="radio"
-                              name="inlineRadioOptions"
+                              name="gender-group"
                               id="inlineRadio1"
-                              value="option1"
+                              value="male"
                               v-model="dog.gender"
                             />
                             <label class="form-check-label" for="inlineRadio1">Male</label>
@@ -116,9 +158,9 @@ const dogNameExists = computed(() => {
                             <input
                               class="form-check-input"
                               type="radio"
-                              name="inlineRadioOptions"
+                              name="gender-group"
                               id="inlineRadio2"
-                              value="option2"
+                              value="female"
                               v-model="dog.gender"
                             />
                             <label class="form-check-label" for="inlineRadio2">Female</label>
@@ -128,65 +170,11 @@ const dogNameExists = computed(() => {
                     </div>
                   </div>
                 </div>
-
-                <!-- <div class="card border-male">
-                  <img class="dog-image border-male" src="https://via.placeholder.com/150" alt />
-                  <h5 class="card-header bg-male">Dog Name</h5>
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-12 mb-3">
-                        <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="name" />
-                      </div>
-                      <div class="col-12 mb-3">
-                        <div class="row">
-                          <div class="col-6">
-                            <label for="name" class="form-label">Breed</label>
-                            <select class="form-select" name="breed" id="breed">
-                              <option value>Breed</option>
-                            </select>
-                          </div>
-                          <div class="col-6">
-                            <label for="name" class="form-label">Sub-Breed</label>
-                            <select class="form-select" name="breed" id="breed">
-                              <option value>Sub-Breed</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="col-12">
-                        <label for="gender" class="form-label">Gender</label>
-                        <div>
-                          <div class="form-check form-check-inline">
-                            <input
-                              class="form-check-input"
-                              type="radio"
-                              name="inlineRadioOptions"
-                              id="inlineRadio1"
-                              value="option1"
-                            />
-                            <label class="form-check-label" for="inlineRadio1">Male</label>
-                          </div>
-                          <div class="form-check form-check-inline">
-                            <input
-                              class="form-check-input"
-                              type="radio"
-                              name="inlineRadioOptions"
-                              id="inlineRadio2"
-                              value="option2"
-                            />
-                            <label class="form-check-label" for="inlineRadio2">Female</label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>-->
               </div>
 
               <div class="row">
                 <div class="col-12 mt-3 d-flex justify-content-end">
-                  <button class="btn btn-success">+ Add Dog</button>
+                  <button @click="addNewDog" class="btn btn-success">+ Add Dog</button>
                 </div>
               </div>
 
