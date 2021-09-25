@@ -1,7 +1,40 @@
 <script setup>
+import { reactive, computed, ref } from 'vue'
 // list all breeds - https://dog.ceo/api/breeds/list/all
 // random from a breed - https://dog.ceo/api/breed/hound/images/random
 // random from a sub-breed - https://dog.ceo/api/breed/hound/afghan/images/random
+
+let breeds = reactive({ list: [] });
+
+const getBreeds = async () => {
+  const json = await fetch('https://dog.ceo/api/breeds/list/all').then(resp => resp.json());
+  console.log(Object.keys(json.message))
+  breeds.list = Object.keys(json.message);
+}
+
+getBreeds();
+
+
+
+const owner = reactive({
+  name: '',
+  surname: ''
+})
+
+const dog = reactive({
+  name: '',
+  breed: '',
+  subBreed: '',
+  gender: ''
+});
+
+const dogs = reactive({
+  list: [dog]
+})
+
+const dogNameExists = computed(() => {
+  return dog.name !== ''
+})
 
 </script>
 
@@ -17,15 +50,15 @@
       <div class="row">
         <div class="col-6 m-auto">
           <div class="row">
-            <h3>Owner</h3>
+            <h3>Owner {{ owner.name }} {{ owner.surname }}</h3>
             <div class="row mb-3">
               <div class="col-6">
                 <label for="name" class="form-label">Name</label>
-                <input type="text" class="form-control" id="name" />
+                <input v-model="owner.name" type="text" class="form-control" id="name" />
               </div>
               <div class="col-6">
                 <label for="surname" class="form-label">Surname</label>
-                <input type="text" class="form-control" id="surname" />
+                <input v-model="owner.surname" type="text" class="form-control" id="surname" />
               </div>
             </div>
           </div>
@@ -35,26 +68,31 @@
               <h3 class="mb-3">Dogs</h3>
 
               <div class="dogs">
-                <div class="card mb-3">
+                <div v-for="dog in dogs.list" class="card mb-3">
                   <img class="dog-image border-female" src="https://via.placeholder.com/150" alt />
-                  <h5 class="card-header bg-female">Dog Name</h5>
+                  <h5 class="card-header bg-female">{{ dogNameExists ? dog.name : 'Dog Name' }}</h5>
                   <div class="card-body">
                     <div class="row">
                       <div class="col-12 mb-3">
                         <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="name" />
+                        <input v-model="dog.name" type="text" class="form-control" id="name" />
                       </div>
                       <div class="col-12 mb-3">
                         <div class="row">
                           <div class="col-6">
                             <label for="name" class="form-label">Breed</label>
-                            <select class="form-select" name="breed" id="breed">
-                              <option value>Breed</option>
+                            <select v-model="dog.breed" class="form-select" name="breed" id="breed">
+                              <option v-for="breed in breeds.list" :value="breed">{{ breed }}</option>
                             </select>
                           </div>
                           <div class="col-6">
                             <label for="name" class="form-label">Sub-Breed</label>
-                            <select class="form-select" name="breed" id="breed">
+                            <select
+                              v-model="dog.subBreed"
+                              class="form-select"
+                              name="breed"
+                              id="breed"
+                            >
                               <option value>Sub-Breed</option>
                             </select>
                           </div>
@@ -70,6 +108,7 @@
                               name="inlineRadioOptions"
                               id="inlineRadio1"
                               value="option1"
+                              v-model="dog.gender"
                             />
                             <label class="form-check-label" for="inlineRadio1">Male</label>
                           </div>
@@ -80,6 +119,7 @@
                               name="inlineRadioOptions"
                               id="inlineRadio2"
                               value="option2"
+                              v-model="dog.gender"
                             />
                             <label class="form-check-label" for="inlineRadio2">Female</label>
                           </div>
@@ -89,7 +129,7 @@
                   </div>
                 </div>
 
-                <div class="card border-male">
+                <!-- <div class="card border-male">
                   <img class="dog-image border-male" src="https://via.placeholder.com/150" alt />
                   <h5 class="card-header bg-male">Dog Name</h5>
                   <div class="card-body">
@@ -141,7 +181,7 @@
                       </div>
                     </div>
                   </div>
-                </div>
+                </div>-->
               </div>
 
               <div class="row">

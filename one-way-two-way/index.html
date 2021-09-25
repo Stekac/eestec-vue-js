@@ -67,7 +67,7 @@
       }
     })
 
-    const flowToJSAndUpdate = (e) => twoWay.value = e.target.value
+    const flowToJSAndUpdate = (event) => twoWay.value = event.target.value
 
     inputTwoWay.addEventListener('input', flowToJSAndUpdate)
 
